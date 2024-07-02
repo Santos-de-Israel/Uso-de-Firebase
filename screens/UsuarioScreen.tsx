@@ -1,7 +1,8 @@
-import { Alert, Button, FlatList, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Alert, Button, FlatList, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { db } from '../config/config'
-import { ref, set,onValue } from "firebase/database";
+import { ref, set,onValue, update, remove } from "firebase/database";
+import Tarjeta from '../components/Tarjeta';
 
 export default function UsuarioScreen() {
   const[cedula, setcedula,]=useState("")
@@ -9,6 +10,8 @@ export default function UsuarioScreen() {
   const[correo, setcorreo,]=useState("")
   const[comentario, setcomentario,]=useState("")
   const[usuarios,setusuarios]=useState([])
+  const [modoEdicion, setModoEdicion] = useState(false);
+
 
   //----------------GUARDAR----------------------///
   function guardarUsuario(cedula: string, nombre: string, correo: string, comentario:string) {
@@ -41,10 +44,34 @@ key, ...data[key]
 console.log(dataTemp);
 setusuarios(dataTemp)
 });
-  }, [usuarios])
+  }, [])
   type Usuario={
     name:string
+    key: string
+    eliminar:string
   }
+
+  ////-----------------------------EDITAR-----------------------//////////
+  function editar(id:string){
+    update(ref(db, 'usuarios/' + id), {
+      name: nombre,
+      email: correo,
+      comment: comentario
+    });
+  }
+
+  function editar2(item:any){
+     setcedula(item.key)
+     setnombre(item.name)
+     setcorreo(item.email)
+     setcomentario(item.comment)
+     setModoEdicion(true);
+
+  }
+
+  ////////////--------------------ELIMINAR--------------------------//////////////
+  function eliminar(id:string){
+    remove(ref(db, 'usuarios/' + id));}
   
   return (
     <View style={styles.container}>
@@ -68,15 +95,38 @@ setusuarios(dataTemp)
       value={comentario}
       multiline/>
 
-      <Button title='GUARDAR' onPress={()=>guardarUsuario(cedula, nombre, correo, comentario)}/>
+<Button
+      title={modoEdicion ? 'ACTUALIZAR' : 'GUARDAR'}
+      onPress={() => {
+        if (modoEdicion) {
+          // Lógica para actualizar usuario
+          editar(cedula); // Suponiendo que cedula es el ID del usuario
+        } else {
+          // Lógica para guardar usuario nuevo
+          guardarUsuario(cedula, nombre, correo, comentario);
+        }
+      }}
+      color={modoEdicion ? 'blue' : undefined} // Cambiar color cuando esté en modo edición
+    />
         <FlatList 
         data={usuarios}
         renderItem={({item}:{item:Usuario})=>
-          <View>
-        <Text>{item.name}</Text>
-      </View>
+        //<Tarjeta usuario={item}/>
+        <View>
+          <Tarjeta usuario={item}/>
+          {/* <Text>{item.name}</Text>
+          <Text>{item.key}</Text> */}
+
+          <View style={{flexDirection:'row'}}>
+          <Button title='Editar' color={'green'} onPress={()=>editar2(item)}/>
+          <Button title='Eliminar' color={'red'} onPress={()=>eliminar(item.key)}/>
+          </View>
+        </View>
+
         }
         />
+
+        <StatusBar/>
         
     </View>
   )
@@ -85,12 +135,12 @@ setusuarios(dataTemp)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#d09d25',
+    backgroundColor: '#ecca93',
     alignItems: 'center',
     justifyContent: 'center',
   },
   txt:{
-backgroundColor: '#52e06c',
+backgroundColor: '#7055f6',
 height:50,
 width:'80%',
 alignItems:'center',
